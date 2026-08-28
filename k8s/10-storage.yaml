@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: navidrome-music
+spec:
+  capacity:
+    storage: 200Gi
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: music
+    name: navidrome-music
+  hostPath:
+    path: /opt/navidrome/music
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["pc1"]
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: navidrome-data
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: music
+    name: navidrome-data
+  hostPath:
+    path: /opt/navidrome/data
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["pc1"]
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: navidrome-import
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: music
+    name: navidrome-import
+  hostPath:
+    path: /opt/navidrome/import
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: ["pc1"]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: navidrome-music
+  namespace: music
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ""
+  volumeName: navidrome-music
+  resources:
+    requests:
+      storage: 200Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: navidrome-data
+  namespace: music
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ""
+  volumeName: navidrome-data
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: navidrome-import
+  namespace: music
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ""
+  volumeName: navidrome-import
+  resources:
+    requests:
+      storage: 5Gi

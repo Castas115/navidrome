@@ -1,0 +1,29 @@
+[package]
+name = "navidrome-import"
+version = "0.1.0"
+edition = "2021"
+description = "Match Exportify playlist exports against a local library, tag it, build m3u playlists"
+license = "MIT"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive", "env"] }
+csv = "1"
+# The reason this is Rust and not Go: lofty reads *and writes* multi-value tags
+# across FLAC, MP3, MP4, Ogg and Opus, and hands back an accurate duration for
+# all of them. Nothing in Go covers that spread.
+lofty = "0.22"
+pathdiff = "0.2"
+rapidfuzz = "0.5"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+unicode-normalization = "0.1"
+walkdir = "2"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"

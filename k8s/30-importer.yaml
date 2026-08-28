@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: navidrome-import
+  namespace: music
+spec:
+  schedule: "*/15 * * * *"
+  # The importer rewrites tags in place. Two of them racing over the same file
+  # would interleave writes and corrupt it.
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 300
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 100
+            fsGroup: 100
+          containers:
+            - name: importer
+              # :latest is mutable, so the node has to re-check the digest on
+              # every run or it would keep the first image it ever cached.
+              image: ghcr.io/castas115/navidrome-import:latest
+              imagePullPolicy: Always
+              args: ["--once"]
+              env:
+                - { name: IMPORT_DIR, value: /import }
+                - { name: MUSIC_DIR, value: /music }
+                - { name: PLAYLISTS_DIR, value: /music/playlists }
+                - { name: DATA_DIR, value: /data }
+              volumeMounts:
+                - { name: music, mountPath: /music }
+                - { name: data, mountPath: /data }
+                - { name: import, mountPath: /import }
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits: { memory: 512Mi }
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+          volumes:
+            - name: music
+              persistentVolumeClaim:
+                claimName: navidrome-music
+            - name: data
+              persistentVolumeClaim:
+                claimName: navidrome-data
+            - name: import
+              persistentVolumeClaim:
+                claimName: navidrome-import
