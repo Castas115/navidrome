@@ -8,6 +8,7 @@ resources:
   - 20-navidrome.yaml
   - 30-importer.yaml
   - 40-explo.yaml
+  - 41-explo-secret.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: navidrome

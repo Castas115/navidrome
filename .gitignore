@@ -3,3 +3,4 @@ data/
 music/
 import/
 *.zip
+*.env
