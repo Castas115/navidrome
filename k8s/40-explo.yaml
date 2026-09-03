@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: explo-config
+  namespace: music
+data:
+  PUID: "1000"
+  PGID: "100"
+
+  TZ: UTC
+
+  WEB_UI: "true"
+  WEB_ADDR: ":7288"
+  WEB_DATA_PATH: /opt/explo/config/
+  WEB_ENV_PATH: /opt/explo/config/.env
+  WEB_CACHE_MB: "500"
+
+  EXPLO_SYSTEM: subsonic
+  SYSTEM_URL: http://navidrome.music.svc.cluster.local:4533
+  PUBLIC_PLAYLIST: "false"
+
+  DOWNLOAD_DIR: /data/
+  USE_SUBDIRECTORY: "true"
+  DOWNLOAD_SERVICES: youtube
+  TRACK_EXTENSION: mp3
+  EMBED_COVER_ART: "true"
+
+  PLAYLISTNAME_FORMAT: week
+  SINGLE_ARTIST: "true"
+  LOG_LEVEL: INFO
+
+  WEEKLY_EXPLORATION_SCHEDULE: "15 0 * * 2"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: explo
+  namespace: music
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: explo
+  template:
+    metadata:
+      labels:
+        app: explo
+    spec:
+      securityContext:
+        fsGroup: 100
+      containers:
+        - name: explo
+          image: ghcr.io/lumepart/explo:v1.1.3
+          envFrom:
+            - configMapRef:
+                name: explo-config
+            - secretRef:
+                name: explo-secrets
+          ports:
+            - name: http
+              containerPort: 7288
+          volumeMounts:
+            - { name: config, mountPath: /opt/explo/config }
+            - { name: music, mountPath: /data, subPath: explo }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { memory: 1Gi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
+          readinessProbe:
+            httpGet: { path: /api/ui/setup-status, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: explo-config
+        - name: music
+          persistentVolumeClaim:
+            claimName: navidrome-music
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: explo
+  namespace: music
+spec:
+  type: LoadBalancer
+  selector:
+    app: explo
+  ports:
+    - name: http
+      port: 7288
+      targetPort: http
